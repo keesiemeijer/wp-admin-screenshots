@@ -4,7 +4,7 @@ Version: 1.0.0-alpha
 
 Create screenshots of all WordPress wp-admin pages found in the admin menu from a local or remote site. See the screenshots taken with this script for WordPress 4.5 admin pages in the [screenshots directory](https://github.com/keesiemeijer/wp-admin-screenshots/tree/master/screenshots). 
 
-**Note**: This is an alpha version. Customizer pages are excluded for now. They will get a seperate command in future.
+**Note**: This is an alpha version! Among other things it's not tested on Multisite. Customizer pages are excluded for now. They will get a seperate command in future.
 
 **Note**: The Screen Options for the user that this script logs in with are changed by default to show all meta boxes. Create a dummy user to log in with, or use the `--check-screen-options=false` sub command to keep the Screen Options as they are.
 
