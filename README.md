@@ -2,7 +2,7 @@
 
 Version: 1.0.0-alpha  
 
-Create screenshots of all WordPress wp-admin pages found in the admin menu from a local or remote site. See the screenshots taken with this script for WordPress 4.5 admin pages in the [screenshots directory](https://github.com/keesiemeijer/wp-admin-screenshots/tree/master/screenshots). 
+Create screenshots of all WordPress wp-admin pages found in the admin menu from a local or remote site. See the screenshots taken with this script for WordPress 4.5 admin pages in the [screenshots directory](https://github.com/keesiemeijer/wp-admin-screenshots/tree/master/screenshots). The script took 3 minutes to take all of these. 
 
 **Note**: This is an alpha version! Among other things it's not tested on Multisite. Customizer pages are excluded for now. They will get a seperate command in future.
 
@@ -11,7 +11,7 @@ Create screenshots of all WordPress wp-admin pages found in the admin menu from 
 ### Requirements
 [CasperJS](http://casperjs.org/) (installed and executable)
 
-At least on of the following is required for CasperJS.
+At least one of the following is required for CasperJS.
 
 [PhantomJS](http://phantomjs.org/) (installed and executable)  
 [SlimerJS](https://slimerjs.org/) (installed and executable)  
