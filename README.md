@@ -12,6 +12,7 @@ Create screenshots of all WordPress wp-admin pages found in the admin menu from 
 [CasperJS](http://casperjs.org/) (installed and executable)
 
 At least on of the following is required for CasperJS.
+
 [PhantomJS](http://phantomjs.org/) (installed and executable)  
 [SlimerJS](https://slimerjs.org/) (installed and executable)  
 
