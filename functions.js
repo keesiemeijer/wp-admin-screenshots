@@ -1,12 +1,62 @@
 var require = patchRequire( require ),
 	utils = require( 'utils' );
 
+
 function _sanitize_filename( filename ) {
 	filename = filename.toLowerCase();
 	filename = filename.replace( /\.php/g, '' );
 	filename = filename.replace( /\W/g, '-' );
 
 	return filename;
+}
+
+
+function _basename( url ) {
+
+	// remove query parameters
+	url = url.split( '?', 2 );
+
+	// strip trailing slash
+	basename = url[ 0 ].replace( /\/$/g, '' );
+	// get last part of href
+	basename = basename.substring( basename.lastIndexOf( '/' ) + 1 );
+
+	if ( typeof url[ 1 ] !== 'undefined' ) {
+		// add query parameters back
+		basename = basename + '?' + url[ 1 ];
+	}
+
+	return basename;
+}
+
+
+function _return_strings( arr ) {
+	return arr.filter( function( item ) {
+		return typeof item === 'string';
+	} );
+}
+
+
+function _check_screen_options_checkboxes( casper ) {
+	if ( casper.exists( '#screen-options-wrap' ) ) {
+		if ( !casper.visible( '#screen-options-wrap' ) ) {
+			_toggle_screen_options( casper );
+		}
+
+		casper.evaluate( function() {
+			var nodes = document.querySelectorAll( '#screen-options-wrap input[type="checkbox"]' );
+
+			for ( var i = 0; i < nodes.length; i++ ) {
+				if ( !nodes[ i ].checked ) {
+					nodes[ i ].click();
+				}
+			}
+		} );
+
+		casper.wait( 1000, function() {
+			casper.echo( "Checked screen options." );
+		} );
+	}
 }
 
 
@@ -36,9 +86,10 @@ function _toggle_screen_options( casper ) {
 			casper.echo( "Opened screen options." );
 		} );
 	}
-};
+}
 
-function _take_screenshot( file, dimensions, casper) {
+
+function _take_screenshot( file, dimensions, casper ) {
 
 	var filename = _sanitize_filename( file );
 	var dir = casper.options[ 'screenshot_options' ][ 'save_dir' ];
@@ -54,60 +105,29 @@ function _take_screenshot( file, dimensions, casper) {
 }
 
 
-exports.get_menu_items = function( css_selector, casper ) {
+function _get_menu_items( css_selector, casper ) {
 	links = casper.evaluate( function( css_selector ) {
 		var elements = __utils__.findAll( css_selector );
 
-		elements = elements.map( function( e ) {
+		return elements.map( function( e ) {
 			var href = e.getAttribute( 'href' );
 			if ( 0 !== href.indexOf( "customize.php" ) ) {
 				return href;
 			}
 		} );
 
-		return elements.filter( function( item ) {
-			return typeof item === 'string';
-		} );
 	}, css_selector );
 
-	return utils.unique( links );;
+	return utils.unique( _return_strings( links ) );
 }
 
-
-exports.take_screenshot = function( file, dimensions, casper ) {
-  _take_screenshot( file, dimensions, casper);	
-};
-
-
-exports.check_screen_options_checkboxes = function( casper ) {
-
-	if ( casper.exists( '#screen-options-wrap' ) ) {
-		if ( !casper.visible( '#screen-options-wrap' ) ) {
-			_toggle_screen_options( casper );
-		}
-
-		casper.evaluate( function() {
-			var nodes = document.querySelectorAll( '#screen-options-wrap input[type="checkbox"]' );
-
-			for ( var i = 0; i < nodes.length; i++ ) {
-				if ( !nodes[ i ].checked ) {
-					nodes[ i ].click();
-				}
-			}
-		} );
-
-		casper.wait( 1000, function() {
-			casper.echo( "Checked screen options." );
-		} );
-	}
-};
 
 exports.loop = function( url, links, options, casper ) {
 	casper.each( links, function( self, link, i ) {
 
 		casper.thenOpen( url + '/wp-admin/' + link, function() {
 
-			casper.emit( 'after.wp_admin_open', link );
+			casper.emit( 'after.open_wp_admin_link', link );
 
 			//set the viewport to the desired height and width
 			casper.viewport( options[ 'viewport-width' ], 400 );
@@ -121,7 +141,7 @@ exports.loop = function( url, links, options, casper ) {
 
 			casper.then( function() {
 				if ( this.exists( '#show-settings-link' ) && options[ 'check-screen-options' ] ) {
-					functions.check_screen_options_checkboxes( casper );
+					_check_screen_options_checkboxes( casper );
 				}
 			} );
 
@@ -130,11 +150,11 @@ exports.loop = function( url, links, options, casper ) {
 
 				if ( !options[ "show-screen-options" ] ) {
 					if ( this.visible( '#screen-options-wrap' ) ) {
-						functions.toggle_screen_options( casper );
+						_toggle_screen_options( casper );
 					}
 				} else {
 					if ( !this.visible( '#screen-options-wrap' ) ) {
-						functions.toggle_screen_options( casper );
+						_toggle_screen_options( casper );
 					}
 				}
 			} );
@@ -168,10 +188,35 @@ exports.loop = function( url, links, options, casper ) {
 	} );
 };
 
+exports.get_menu_items = function( css_selector, casper ) {
+	return _get_menu_items( css_selector, casper );
+}
+
+exports.take_screenshot = function( file, dimensions, casper ) {
+	_take_screenshot( file, dimensions, casper );
+};
+
+
+exports.check_screen_options_checkboxes = function( casper ) {
+	_check_screen_options_checkboxes( casper )
+};
+
+
 exports.toggle_screen_options = function( casper ) {
 	_toggle_screen_options( casper );
 };
 
+
 exports.sanitize_filename = function( filename ) {
 	_sanitize_filename( filename );
+};
+
+
+exports.sanitize_links = function( links ) {
+
+	links = links.map( function( url ) {
+		return _basename( url );
+	} );
+
+	return utils.unique( _return_strings( links ) );
 };

@@ -4,7 +4,7 @@ var utils = require( 'utils' ),
 		// logLevel: "debug"
 	} ),
 	functions = require( './functions' ),
-	filters = require( './filters' ),
+	//events = require( './events' ),
 	base_url = '',
 	admin_links = [],
 	submenu_links = [],
@@ -39,7 +39,33 @@ casper.options[ 'screenshot_options' ] = options;
 // 	this.echo( 'remote message caught: ' + msg );
 // } );
 
-filters.instance( casper );
+//events.instance( casper );
+
+// submenus WP < 2.7
+var submenu = function( link ) {
+
+	if ( casper.exists( '#submenu' ) ) {
+		var links = functions.get_menu_items( '#submenu a', casper );
+
+		if ( links.length ) {
+			links = functions.sanitize_links( links );
+
+			links = links.filter( function( link ) {
+				return ( links.indexOf( link ) > -1 );
+			} );
+		}
+
+		if ( links.length ) {
+			submenu_links = utils.unique( submenu_links.concat( links ) );
+		}
+
+		// utils.dump( submenu_links );
+	};
+}
+
+// event listener to get submenu items when opening a top level admin page
+casper.on( 'after.open_wp_admin_link', submenu );
+
 
 // Open /wp-login.php
 if ( base_url.length ) {
@@ -55,17 +81,34 @@ if ( base_url.length ) {
 // Log in
 casper.then( function() {
 	if ( this.exists( '#loginform' ) ) {
+		var user_login = user_pass = '';
 
-		this.echo( "logging in at " + base_url + "/wp-login.php" )
-		this.fillSelectors( '#loginform', {
-			'#user_login': options[ 'admin_user' ],
-			'#user_pass': options[ 'admin_password' ]
-		}, true );
+		var user = [ 'user_login', 'log' ];
+		var pass = [ 'user_pass', 'pwd' ];
 
-		// wait for wp-admin
-		this.waitForUrl( /wp-admin\/?/, function() {
-			this.echo( 'Logged in!' );
+		var user_login = user.filter( function( selector ) {
+			return casper.exists( '#loginform input#' + selector );
 		} );
+
+		var user_pass = pass.filter( function( selector ) {
+			return casper.exists( '#loginform input#' + selector );
+		} );
+
+		if ( user_pass.length && user_login.length ) {
+			var login = {};
+			login[ '#' + user_login ] = options[ 'admin_user' ];
+			login[ '#' + user_pass ] = options[ 'admin_password' ];
+
+			this.echo( "logging in at " + base_url + "/wp-login.php" )
+			this.fillSelectors( '#loginform', login, true );
+
+			// wait for wp-admin
+			this.waitForUrl( /wp-admin\/?/, function() {
+				this.echo( 'Logged in!' );
+			} );
+		} else {
+			this.echo( "Login fields not found" ).exit();
+		}
 
 	} else {
 		this.echo( "Login form not found" ).exit();
@@ -87,7 +130,9 @@ casper.then( function() {
 		}
 	}
 
-	admin_links = utils.unique( admin_links );
+	admin_links = functions.sanitize_links( admin_links );
+
+	// utils.dump( admin_links );
 
 	if ( admin_links.length ) {
 		this.echo( admin_links.length + top_level + " admin links found\n" );
@@ -99,7 +144,15 @@ casper.then( function() {
 
 //Loop through admin pages and take a screenshot
 casper.then( function() {
-	functions.loop( base_url, admin_links, options, casper);
+	functions.loop( base_url, admin_links, options, casper );
+} );
+
+//Loop through submenu pages and take a screenshot
+casper.then( function() {
+	if ( submenu_links.length ) {
+		this.removeListener( 'after.open_wp_admin_link', submenu );
+		functions.loop( base_url, submenu_links, options, casper );
+	}
 } );
 
 
