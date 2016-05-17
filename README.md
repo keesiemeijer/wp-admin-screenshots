@@ -4,7 +4,7 @@ Version: 1.0.0-alpha
 
 Create screenshots of all WordPress wp-admin pages found in the admin menu from a local or remote site. See the screenshots taken with this script for WordPress 4.5 in the [screenshots directory](https://github.com/keesiemeijer/wp-admin-screenshots/tree/master/screenshots). It only took a couple of minutes to take all of these.
 
-Compatible with WordPress 2.8 and up.
+Compatible with WordPress 2.0 and up.
 
 **Note**: This is an alpha version! Among other things it's not tested with multisite. Customizer pages are excluded for now. They will get a separate command in future.
 
