@@ -143,7 +143,7 @@ exports.loop = function( url, links, options, casper ) {
 				casper.wait( 2000 );
 			} );
 
-			casper.emit( 'after.open_wp_admin_link', link );
+			casper.emit( 'open_wp_admin_link', link );
 
 			casper.then( function() {
 
