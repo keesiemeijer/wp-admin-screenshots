@@ -43,35 +43,6 @@ casper.options[ 'wp_admin_submenu_links' ] = [];
 
 events.instance( casper );
 
-// submenus WP < 2.7
-var submenu = function( link ) {
-	var submenu_links = [];
-
-	if ( casper.exists( '#submenu' ) ) {
-		var admin_links = functions.get_menu_items( '#submenu a', casper );
-
-		if ( admin_links.length ) {
-			admin_links = functions.sanitize_links( admin_links );
-
-			admin_links = admin_links.filter( function( link ) {
-				return ( links.indexOf( link ) > -1 );
-			} );
-		}
-
-		if ( admin_links.length ) {
-			submenu_links = utils.unique( submenu_links.concat( admin_links ) );
-		}
-
-		casper.options[ 'wp_admin_submenu_links' ] = submenu_links;
-	};
-
-	// utils.dump( casper.options[ 'wp_admin_submenu_links' ] );
-}
-
-// event listener to get submenu items when opening a top level admin page
-casper.on( 'after.open_wp_admin_link', submenu );
-
-
 // Open /wp-login.php
 if ( base_url.length ) {
 	// start casper and check if /wp-login.php exists
@@ -154,15 +125,25 @@ casper.then( function() {
 
 //Loop through admin pages and take a screenshot
 casper.then( function() {
+	casper.emit( 'before_wp_admin_loop' );
 	functions.loop( base_url, casper.options[ 'wp_admin_links' ], options, casper );
+} );
+
+casper.then( function() {
+	casper.emit( 'after_wp_admin_loop' );
 } );
 
 //Loop through submenu pages and take a screenshot
 casper.then( function() {
+
 	if ( casper.options[ 'wp_admin_submenu_links' ].length ) {
-		this.removeListener( 'after.open_wp_admin_link', submenu );
+		casper.emit( 'before_wp_admin_submenu_loop' );
 		functions.loop( base_url, casper.options[ 'wp_admin_submenu_links' ], options, casper );
 	}
+} );
+
+casper.then( function() {
+	casper.emit( 'after_wp_admin_submenu_loop' );
 } );
 
 
