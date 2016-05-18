@@ -37,25 +37,31 @@ function _return_strings( arr ) {
 }
 
 
-function _check_screen_options_checkboxes( casper ) {
-	if ( casper.exists( '#screen-options-wrap' ) ) {
-		if ( !casper.visible( '#screen-options-wrap' ) ) {
-			_toggle_screen_options( casper );
-		}
+function _set_attribute( selector, attribute, value, casper ) {
+	if ( casper.exists( selector ) ) {
+		casper.evaluate( function( selector, attribute, value ) {
+			var elements = __utils__.findAll( selector );
 
-		casper.evaluate( function() {
-			var nodes = document.querySelectorAll( '#screen-options-wrap input[type="checkbox"]' );
+			elements.map( function( el ) {
+				el.setAttribute( attribute, value );
+			} );
 
-			for ( var i = 0; i < nodes.length; i++ ) {
-				if ( !nodes[ i ].checked ) {
-					nodes[ i ].click();
+		}, selector, attribute, value );
+	}
+}
+
+function _check( selector, casper ) {
+	if ( casper.exists( selector ) ) {
+		casper.evaluate( function( selector ) {
+			var elements = __utils__.findAll( selector );
+
+			elements.map( function( el ) {
+				if ( !el.checked ) {
+					el.click();
 				}
-			}
-		} );
+			} );
 
-		casper.wait( 1000, function() {
-			casper.echo( "Checked screen options." );
-		} );
+		}, selector );
 	}
 }
 
@@ -127,24 +133,17 @@ exports.loop = function( url, links, options, casper ) {
 
 		casper.thenOpen( url + '/wp-admin/' + link, function() {
 
-			casper.emit( 'after.open_wp_admin_link', link );
-
-			//set the viewport to the desired height and width
+			// Reset the viewport width to the desired height and width
 			casper.viewport( options[ 'viewport-width' ], 400 );
 
 			casper.echo( "\nOpening " + url + '/wp-admin/' + link + ' at ' + options[ 'viewport-width' ] + 'px' );
 
-			// wait for stuff to load (like in customizer)
+			// Wait for stuff to load (like in customizer)
 			casper.then( function() {
 				casper.wait( 2000 );
 			} );
 
-			casper.then( function() {
-				if ( this.exists( '#show-settings-link' ) && options[ 'check-screen-options' ] ) {
-					_check_screen_options_checkboxes( casper );
-				}
-			} );
-
+			casper.emit( 'after.open_wp_admin_link', link );
 
 			casper.then( function() {
 
@@ -159,7 +158,6 @@ exports.loop = function( url, links, options, casper ) {
 				}
 			} );
 
-
 			casper.then( function() {
 				casper.scrollTo( 0, 0 );
 
@@ -167,16 +165,17 @@ exports.loop = function( url, links, options, casper ) {
 					return __utils__.getDocumentHeight();
 				} );
 
-				var dimensions = {
+				// Make dimensions filterable in the 'before_screenshot' action.
+				casper.options[ 'screenshot_dimensions' ] = {
 					top: 0,
 					left: 0,
 					width: options[ 'viewport-width' ],
 					height: documentHeight
 				}
 
-				//dimensions = filters.get_dimensions( link, dimensions );
+				casper.emit( 'before_screenshot', link );
 
-				_take_screenshot( link, dimensions, casper )
+				_take_screenshot( link, casper.options[ 'screenshot_dimensions' ], casper )
 
 				casper.emit( 'after.screenshot', link );
 			} );
@@ -188,17 +187,20 @@ exports.loop = function( url, links, options, casper ) {
 	} );
 };
 
+exports.check = function( selector, casper ) {
+	_check( selector, casper );
+}
+
+exports.set_attribute = function( selector, attribute, value, casper ) {
+	_set_attribute( selector, attribute, value, casper );
+}
+
 exports.get_menu_items = function( css_selector, casper ) {
 	return _get_menu_items( css_selector, casper );
 }
 
 exports.take_screenshot = function( file, dimensions, casper ) {
 	_take_screenshot( file, dimensions, casper );
-};
-
-
-exports.check_screen_options_checkboxes = function( casper ) {
-	_check_screen_options_checkboxes( casper )
 };
 
 

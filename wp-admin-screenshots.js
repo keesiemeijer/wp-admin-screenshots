@@ -1,13 +1,7 @@
 var utils = require( 'utils' ),
-	casper = require( 'casper' ).create( {
-		// verbose: true,
-		// logLevel: "debug"
-	} ),
 	functions = require( './functions' ),
-	//events = require( './events' ),
+	events = require( './do-events' ),
 	base_url = '',
-	admin_links = [],
-	submenu_links = [],
 	defaults = {
 		'admin_user': 'admin',
 		'admin_password': 'password',
@@ -16,6 +10,11 @@ var utils = require( 'utils' ),
 		'viewport-width': 1024,
 		'save_dir': ''
 	};
+
+var casper = require( 'casper' ).create( {
+	// verbose: true,
+	// logLevel: "debug"
+} );
 
 // Check cli args
 if ( casper.cli.args.length === 0 ) {
@@ -31,7 +30,10 @@ if ( !utils.isNumber( options[ 'viewport-width' ] ) ) {
 	options[ 'viewport-width' ] = 1024;
 }
 
+// Add options to casper.options
 casper.options[ 'screenshot_options' ] = options;
+casper.options[ 'wp_admin_links' ] = [];
+casper.options[ 'wp_admin_submenu_links' ] = [];
 
 // utils.dump( options );
 
@@ -39,28 +41,31 @@ casper.options[ 'screenshot_options' ] = options;
 // 	this.echo( 'remote message caught: ' + msg );
 // } );
 
-//events.instance( casper );
+events.instance( casper );
 
 // submenus WP < 2.7
 var submenu = function( link ) {
+	var submenu_links = [];
 
 	if ( casper.exists( '#submenu' ) ) {
-		var links = functions.get_menu_items( '#submenu a', casper );
+		var admin_links = functions.get_menu_items( '#submenu a', casper );
 
-		if ( links.length ) {
-			links = functions.sanitize_links( links );
+		if ( admin_links.length ) {
+			admin_links = functions.sanitize_links( admin_links );
 
-			links = links.filter( function( link ) {
+			admin_links = admin_links.filter( function( link ) {
 				return ( links.indexOf( link ) > -1 );
 			} );
 		}
 
-		if ( links.length ) {
-			submenu_links = utils.unique( submenu_links.concat( links ) );
+		if ( admin_links.length ) {
+			submenu_links = utils.unique( submenu_links.concat( admin_links ) );
 		}
 
-		// utils.dump( submenu_links );
+		casper.options[ 'wp_admin_submenu_links' ] = submenu_links;
 	};
+
+	// utils.dump( casper.options[ 'wp_admin_submenu_links' ] );
 }
 
 // event listener to get submenu items when opening a top level admin page
@@ -120,7 +125,7 @@ casper.then( function() {
 casper.then( function() {
 
 	var top_level = '';
-	admin_links = functions.get_menu_items( '#adminmenu a', casper );
+	var admin_links = functions.get_menu_items( '#adminmenu a', casper );
 
 	if ( this.exists( '#sidemenu' ) ) {
 		var sidemenu = functions.get_menu_items( '#sidemenu a', casper );
@@ -130,12 +135,17 @@ casper.then( function() {
 		}
 	}
 
-	admin_links = functions.sanitize_links( admin_links );
+	// make wp_admin_links filterable in the 'wp_admin_links' action
+	casper.options[ 'wp_admin_links' ] = functions.sanitize_links( admin_links );
 
-	// utils.dump( admin_links );
+	casper.emit( 'wp_admin_links' );
 
-	if ( admin_links.length ) {
-		this.echo( admin_links.length + top_level + " admin links found\n" );
+	var found_links = casper.options[ 'wp_admin_links' ].length;
+
+	// utils.dump( casper.options[ 'wp_admin_links' ] );
+
+	if ( found_links ) {
+		this.echo( found_links + top_level + " admin links found\n" );
 	} else {
 		this.echo( "No admin links found" ).exit();
 	}
@@ -144,14 +154,14 @@ casper.then( function() {
 
 //Loop through admin pages and take a screenshot
 casper.then( function() {
-	functions.loop( base_url, admin_links, options, casper );
+	functions.loop( base_url, casper.options[ 'wp_admin_links' ], options, casper );
 } );
 
 //Loop through submenu pages and take a screenshot
 casper.then( function() {
-	if ( submenu_links.length ) {
+	if ( casper.options[ 'wp_admin_submenu_links' ].length ) {
 		this.removeListener( 'after.open_wp_admin_link', submenu );
-		functions.loop( base_url, submenu_links, options, casper );
+		functions.loop( base_url, casper.options[ 'wp_admin_submenu_links' ], options, casper );
 	}
 } );
 
