@@ -41,7 +41,7 @@ casper.options[ 'wp_admin_submenu_links' ] = [];
 // 	this.echo( 'remote message caught: ' + msg );
 // } );
 
-events.instance( casper );
+events.init( casper );
 
 // Open /wp-login.php
 if ( base_url.length ) {
@@ -96,15 +96,17 @@ casper.then( function() {
 casper.then( function() {
 
 	var top_level = '';
-	var admin_links = functions.get_menu_items( '#adminmenu a', casper );
+	var selector = [ '#adminmenu', '#sidemenu' ];
+	var admin_links = [];
 
-	if ( this.exists( '#sidemenu' ) ) {
-		var sidemenu = functions.get_menu_items( '#sidemenu a', casper );
-		if ( sidemenu.length ) {
-			top_level = ' top level';
-			admin_links = admin_links.concat( sidemenu );
+	for ( var i = 0; i < selector.length; i++ ) {
+		if ( this.exists( selector[ i ] ) ) {
+			var pages = functions.get_menu_items( selector[ i ] + ' a', casper );
+			if ( pages.length ) {
+				admin_links = admin_links.concat( pages );
+			}
 		}
-	}
+	};
 
 	// make wp_admin_links filterable in the 'wp_admin_links' action
 	casper.options[ 'wp_admin_links' ] = functions.sanitize_links( admin_links );
@@ -112,8 +114,6 @@ casper.then( function() {
 	casper.emit( 'wp_admin_links' );
 
 	var found_links = casper.options[ 'wp_admin_links' ].length;
-
-	// utils.dump( casper.options[ 'wp_admin_links' ] );
 
 	if ( found_links ) {
 		this.echo( found_links + top_level + " admin links found\n" );
@@ -125,24 +125,27 @@ casper.then( function() {
 
 //Loop through admin pages and take a screenshot
 casper.then( function() {
+	this.echo( "Admin loop started" );
 	casper.emit( 'before_wp_admin_loop' );
 	functions.loop( base_url, casper.options[ 'wp_admin_links' ], options, casper );
 } );
 
 casper.then( function() {
+	this.echo( "Admin loop finished" );
 	casper.emit( 'after_wp_admin_loop' );
 } );
 
 //Loop through submenu pages and take a screenshot
 casper.then( function() {
-
 	if ( casper.options[ 'wp_admin_submenu_links' ].length ) {
+		this.echo( "Admin submenu loop started" );
 		casper.emit( 'before_wp_admin_submenu_loop' );
 		functions.loop( base_url, casper.options[ 'wp_admin_submenu_links' ], options, casper );
 	}
 } );
 
 casper.then( function() {
+	this.echo( "Admin submenu loop finished" );
 	casper.emit( 'after_wp_admin_submenu_loop' );
 } );
 
