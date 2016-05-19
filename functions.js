@@ -65,6 +65,23 @@ function _check( selector, casper ) {
 	}
 }
 
+function _get_dimensions( casper ) {
+
+	documentHeight = casper.evaluate( function() {
+		return __utils__.getDocumentHeight();
+	} );
+
+	documentWidth = casper.options[ 'screenshot_options' ][ 'viewport-width' ];
+
+	// Make dimensions filterable in the 'before_screenshot' action.
+	return {
+		top: 0,
+		left: 0,
+		width: documentWidth,
+		height: documentHeight
+	}
+}
+
 
 function _toggle_screen_options( casper ) {
 
@@ -112,19 +129,27 @@ function _take_screenshot( file, dimensions, casper ) {
 
 
 function _get_menu_items( css_selector, casper ) {
-	links = casper.evaluate( function( css_selector ) {
+	items = casper.evaluate( function( css_selector ) {
 		var elements = __utils__.findAll( css_selector );
 
-		return elements.map( function( e ) {
-			var href = e.getAttribute( 'href' );
-			if ( 0 !== href.indexOf( "customize.php" ) ) {
+		return elements.map( function( el ) {
+			var href = el.getAttribute( 'href' );
+			if ( typeof href === 'string' ) {
 				return href;
 			}
 		} );
 
 	}, css_selector );
 
-	return utils.unique( _return_strings( links ) );
+	// Remove customizer links
+	items = items.filter( function( el ) {
+		if ( 0 !== el.indexOf( "customize.php" ) ) {
+			return true;
+		}
+		return false;
+	} );
+
+	return utils.unique( _return_strings( items ) );
 }
 
 
@@ -161,26 +186,18 @@ exports.loop = function( url, links, options, casper ) {
 			casper.then( function() {
 				casper.scrollTo( 0, 0 );
 
-				documentHeight = casper.evaluate( function() {
-					return __utils__.getDocumentHeight();
-				} );
-
 				// Make dimensions filterable in the 'before_screenshot' action.
-				casper.options[ 'screenshot_dimensions' ] = {
-					top: 0,
-					left: 0,
-					width: options[ 'viewport-width' ],
-					height: documentHeight
-				}
+				casper.options[ 'screenshot_dimensions' ] = _get_dimensions( casper );
 
 				casper.emit( 'before_screenshot', link );
-
-				_take_screenshot( link, casper.options[ 'screenshot_dimensions' ], casper )
-
-				casper.emit( 'after.screenshot', link );
 			} );
 
 			casper.then( function() {
+				_take_screenshot( link, casper.options[ 'screenshot_dimensions' ], casper )
+			} );
+
+			casper.then( function() {
+				casper.emit( 'after.screenshot', link );
 				casper.wait( 2000 );
 			} );
 		} );
@@ -193,6 +210,10 @@ exports.check = function( selector, casper ) {
 
 exports.set_attribute = function( selector, attribute, value, casper ) {
 	_set_attribute( selector, attribute, value, casper );
+}
+
+exports.get_dimensions = function( casper ) {
+	return _get_dimensions( casper );
 }
 
 exports.get_menu_items = function( css_selector, casper ) {
@@ -210,7 +231,7 @@ exports.toggle_screen_options = function( casper ) {
 
 
 exports.sanitize_filename = function( filename ) {
-	_sanitize_filename( filename );
+	return _sanitize_filename( filename );
 };
 
 
