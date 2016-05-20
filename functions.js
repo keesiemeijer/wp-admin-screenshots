@@ -2,10 +2,37 @@ var require = patchRequire( require ),
 	utils = require( 'utils' );
 
 
+function _get_option( option, casper ) {
+	if ( typeof casper.options[ 'screenshot_options' ][ option ] !== 'undefined' ) {
+		return casper.options[ 'screenshot_options' ][ option ];
+	}
+
+	return false;
+}
+
+
+function _get_element_selector( selectors, casper ) {
+	for ( var i = 0; i < selectors.length; i++ ) {
+		if ( casper.exists( selectors[ i ] ) ) {
+			return selectors[ i ];
+		}
+	}
+	return false;
+}
+
+
 function _sanitize_filename( filename ) {
 	filename = filename.toLowerCase();
+	// remove .php
 	filename = filename.replace( /\.php/g, '' );
+	// replace non alphanumeric characters with a dash
 	filename = filename.replace( /\W/g, '-' );
+	// replace multiple dashes with one dash
+	filename = filename.replace( /\-+/g, '-' );
+	// replace dash at start
+	filename = filename.replace( /^\-+/m, '-' );
+	// replace dash at end
+	filename = filename.replace( /\-+$/m, '-' );
 
 	return filename;
 }
@@ -50,6 +77,16 @@ function _set_attribute( selector, attribute, value, casper ) {
 	}
 }
 
+
+function _css_display( selectors, type, casper ) {
+	for ( var i = 0; i < selectors.length; i++ ) {
+		if ( casper.exists( selectors[ i ] ) ) {
+			_set_attribute( selectors[ i ], 'style', 'display:' + type + ';', casper );
+		}
+	}
+}
+
+
 function _check( selector, casper ) {
 	if ( casper.exists( selector ) ) {
 		casper.evaluate( function( selector ) {
@@ -64,6 +101,7 @@ function _check( selector, casper ) {
 		}, selector );
 	}
 }
+
 
 function _get_dimensions( casper ) {
 
@@ -90,20 +128,13 @@ function _toggle_screen_options( casper ) {
 	}
 
 	if ( casper.visible( '#screen-options-wrap' ) ) {
-		casper.evaluate( function() {
-			document.getElementById( "screen-meta" ).setAttribute( 'style', 'display:none !important' );
-			document.getElementById( 'screen-options-wrap' ).setAttribute( 'style', 'display:none !important' );
-		} );
+		_css_display( [ "#screen-meta", "#screen-options-wrap" ], 'none !important', casper );
 
 		casper.waitWhileVisible( '#screen-options-wrap', function() {
 			casper.echo( "Closed screen options" );
 		} );
 	} else {
-
-		casper.evaluate( function() {
-			document.getElementById( "screen-meta" ).setAttribute( 'style', 'display:block !important' );
-			document.getElementById( 'screen-options-wrap' ).setAttribute( 'style', 'display:block !important' );
-		} );
+		_css_display( [ "#screen-meta", "#screen-options-wrap" ], 'block !important', casper );
 
 		casper.waitUntilVisible( '#screen-options-wrap', function() {
 			casper.echo( "Opened screen options." );
@@ -115,7 +146,7 @@ function _toggle_screen_options( casper ) {
 function _take_screenshot( file, dimensions, casper ) {
 
 	var filename = _sanitize_filename( file );
-	var dir = casper.options[ 'screenshot_options' ][ 'save_dir' ];
+	var dir = _get_option( 'save_dir', casper );
 
 	if ( dir.length ) {
 		filename = dir + '/' + filename + ".png";
@@ -204,36 +235,46 @@ exports.loop = function( url, links, options, casper ) {
 	} );
 };
 
-exports.check = function( selector, casper ) {
-	_check( selector, casper );
+
+exports.get_option = function( option, casper ) {
+	return _get_option( option, casper );
 }
+
+exports.get_element_selector = function( selectors, casper ) {
+	return _get_element_selector( selectors, casper );
+}
+
+exports.sanitize_filename = function( filename ) {
+	return _sanitize_filename( filename );
+};
 
 exports.set_attribute = function( selector, attribute, value, casper ) {
 	_set_attribute( selector, attribute, value, casper );
+}
+
+exports.css_display = function( selectors, type, casper ) {
+	_css_display( selectors, type, casper );
+}
+
+exports.check = function( selector, casper ) {
+	_check( selector, casper );
 }
 
 exports.get_dimensions = function( casper ) {
 	return _get_dimensions( casper );
 }
 
-exports.get_menu_items = function( css_selector, casper ) {
-	return _get_menu_items( css_selector, casper );
-}
+exports.toggle_screen_options = function( casper ) {
+	_toggle_screen_options( casper );
+};
 
 exports.take_screenshot = function( file, dimensions, casper ) {
 	_take_screenshot( file, dimensions, casper );
 };
 
-
-exports.toggle_screen_options = function( casper ) {
-	_toggle_screen_options( casper );
-};
-
-
-exports.sanitize_filename = function( filename ) {
-	return _sanitize_filename( filename );
-};
-
+exports.get_menu_items = function( css_selector, casper ) {
+	return _get_menu_items( css_selector, casper );
+}
 
 exports.sanitize_links = function( links ) {
 

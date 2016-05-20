@@ -17,7 +17,7 @@ exports.init = function( instance ) {
 function do_events() {
 
 	// Filter admin links. Use this to set the admin links to take screenshots for.
-	// casper.on( 'wp_admin_links', set_admin_links );
+	//casper.on( 'wp_admin_links', set_admin_links );
 
 	// Get submenu links (WP < 2.7)
 	casper.on( 'open_wp_admin_link', get_submenu_links );

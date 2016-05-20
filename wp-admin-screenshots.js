@@ -56,27 +56,23 @@ if ( base_url.length ) {
 
 // Log in
 casper.then( function() {
-	if ( this.exists( '#loginform' ) ) {
-		var user_login = user_pass = '';
+	// future-compat - add future selectors for the login form 
+	var login_selectors = [ '#loginform' ];
 
-		var user = [ 'user_login', 'log' ];
-		var pass = [ 'user_pass', 'pwd' ];
+	var login = functions.get_element_selector( login_selectors, casper );
 
-		var user_login = user.filter( function( selector ) {
-			return casper.exists( '#loginform input#' + selector );
-		} );
+	if ( login ) {
 
-		var user_pass = pass.filter( function( selector ) {
-			return casper.exists( '#loginform input#' + selector );
-		} );
+		var user = functions.get_element_selector( [ '#user_login', '#log' ], casper );
+		var pass = functions.get_element_selector( [ '#user_pass', '#pwd' ], casper );
 
-		if ( user_pass.length && user_login.length ) {
-			var login = {};
-			login[ '#' + user_login ] = options[ 'admin_user' ];
-			login[ '#' + user_pass ] = options[ 'admin_password' ];
+		if ( user && pass ) {
+			var login_obj = {};
+			login_obj[ user ] = options[ 'admin_user' ];
+			login_obj[ pass ] = options[ 'admin_password' ];
 
 			this.echo( "logging in at " + base_url + "/wp-login.php" )
-			this.fillSelectors( '#loginform', login, true );
+			this.fillSelectors( login, login_obj, true );
 
 			// wait for wp-admin
 			this.waitForUrl( /wp-admin\/?/, function() {
@@ -96,12 +92,12 @@ casper.then( function() {
 casper.then( function() {
 
 	var top_level = '';
-	var selector = [ '#adminmenu', '#sidemenu' ];
+	var selectors = [ '#adminmenu', '#sidemenu' ];
 	var admin_links = [];
 
-	for ( var i = 0; i < selector.length; i++ ) {
-		if ( this.exists( selector[ i ] ) ) {
-			var pages = functions.get_menu_items( selector[ i ] + ' a', casper );
+	for ( var i = 0; i < selectors.length; i++ ) {
+		if ( this.exists( selectors[ i ] ) ) {
+			var pages = functions.get_menu_items( selectors[ i ] + ' a', casper );
 			if ( pages.length ) {
 				admin_links = admin_links.concat( pages );
 			}
